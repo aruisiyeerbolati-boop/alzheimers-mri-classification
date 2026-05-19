@@ -1,0 +1,7 @@
+joblib
+numpy
+pandas
+Pillow
+scikit-learn
+torch
+tqdm
