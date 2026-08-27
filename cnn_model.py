@@ -12,14 +12,17 @@ this cnn use conv layer to extract image feature, finish binary classification t
 
 from __future__ import annotations
 
+import csv
 import math
 import random
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -37,6 +40,8 @@ LATEST_MODEL_PATH = ROOT / "models" / "cnn_latest.pt"
 TEST_DATA_DIR = ROOT / "test_data"
 DATASET_DIR = ROOT / "dataset" / "MRI"
 FALLBACK_DATASET_DIR = PROJECT_ROOT / "dataset" / "MRI"
+PREDICTIONS_CSV_PATH = ROOT / "cnn_6400_predictions.csv"
+CONFUSION_MATRIX_PATH = ROOT / "cnn_confusion_matrix.png"
 
 
 def set_seed(seed: int = SEED) -> None:
@@ -350,16 +355,17 @@ def train_model() -> None:
 
 
 def test_model() -> None:
-    #load model and run test data
+    #load the existing model and evaluate every image in the full MRI dataset
     set_seed()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, checkpoint = load_checkpoint(device)
     mean = float(checkpoint.get("mean", 0.5))
     std = float(checkpoint.get("std", 0.25))
     threshold = float(checkpoint.get("val_threshold", checkpoint.get("threshold", 0.5)))
-    files = iter_images(TEST_DATA_DIR)
+    dataset_dir = resolve_dataset_dir()
+    files = iter_images(dataset_dir)
     if not files:
-        raise RuntimeError(f"No JPG/PNG test images were found in: {TEST_DATA_DIR}")
+        raise RuntimeError(f"No JPG/PNG images were found in: {dataset_dir}")
 
     dataset = InferenceDataset(files, mean, std)
     loader = DataLoader(dataset, batch_size=32, shuffle=False, num_workers=0)
@@ -374,22 +380,68 @@ def test_model() -> None:
             probs.extend(float(p) for p in batch_probs)
             preds.extend(int(p >= threshold) for p in batch_probs)
 
-    #compare predict result and real label
+    #compare predictions with binary labels and save every result
     correct = 0
+    true_labels: list[int] = []
     print(f"Test images: {len(files)}")
     print(f"Demented threshold: {threshold:.4f}")
-    for path, pred, prob in zip(files, preds, probs):
-        true_label = label_from_dir_name(path.parent.name)
-        correct += int(pred == true_label)
-        print(
-            f"File: {path.name} | "
-            f"True: {label_text(true_label)} | "
-            f"Predicted: {label_text(pred)} | "
-            f"Demented probability: {prob:.4f}"
+    with PREDICTIONS_CSV_PATH.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(
+            [
+                "filename",
+                "original_class",
+                "binary_true_label",
+                "predicted_label",
+                "demented_probability",
+                "correct",
+            ]
         )
 
-    accuracy = correct / len(files)
-    print(f"Accuracy: {correct}/{len(files)} = {accuracy:.2%}")
+        for path, pred, prob in zip(files, preds, probs):
+            original_class = path.parent.name
+            true_label = label_from_dir_name(original_class)
+            true_labels.append(true_label)
+            is_correct = pred == true_label
+            correct += int(is_correct)
+            writer.writerow(
+                [
+                    path.name,
+                    original_class,
+                    label_text(true_label),
+                    label_text(pred),
+                    f"{prob:.6f}",
+                    is_correct,
+                ]
+            )
+            print(
+                f"File: {path.name} | "
+                f"Original class: {original_class} | "
+                f"Binary true label: {label_text(true_label)} | "
+                f"Predicted: {label_text(pred)} | "
+                f"Demented probability: {prob:.6f} | "
+                f"Correct: {is_correct}"
+            )
+
+    total = len(files)
+    incorrect = total - correct
+    accuracy = correct / total
+    matrix = confusion_matrix(true_labels, preds, labels=[0, 1])
+    display = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=LABELS)
+    display.plot(cmap="Blues", values_format="d")
+    display.ax_.set_title("CNN Confusion Matrix")
+    display.figure_.tight_layout()
+    display.figure_.savefig(CONFUSION_MATRIX_PATH, dpi=300, bbox_inches="tight")
+    plt.close(display.figure_)
+
+    print(f"Predictions saved to: {PREDICTIONS_CSV_PATH}")
+    print("Confusion matrix (rows=true labels, columns=predicted labels):")
+    print(matrix)
+    print(f"Confusion matrix figure saved to: {CONFUSION_MATRIX_PATH}")
+    print(f"Total number of images tested: {total}")
+    print(f"Number correct: {correct}")
+    print(f"Number incorrect: {incorrect}")
+    print(f"Overall accuracy: {accuracy:.2%}")
 
 
 def main() -> None:

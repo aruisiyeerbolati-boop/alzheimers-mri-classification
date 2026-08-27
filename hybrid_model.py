@@ -3,7 +3,8 @@ CNN-SVM hybrid script for the MRI project.
 
 MODEL:
 - Test mode: load the CNN checkpoint and the saved hybrid SVM, extract CNN
-  embeddings from code/test_data, then let the SVM make the final prediction.
+  embeddings from all images in dataset/MRI, let the SVM make the final
+  prediction, and save the results to hybrid_6400_predictions.csv.
 - Train mode: read code/dataset/MRI, use the CNN as a feature extractor, train
   an SVM on those CNN features, and save the hybrid model under code/models.
 
@@ -18,6 +19,7 @@ That way we get CNN-style image features and a classic SVM classifier together.
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 import random
@@ -26,11 +28,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
-from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    accuracy_score,
+    balanced_accuracy_score,
+    confusion_matrix,
+    f1_score,
+    roc_auc_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -485,17 +495,21 @@ def train_mode(paths: ProjectPaths) -> None:
 
 
 def predict_scores(model_bundle: dict, embeddings: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    #svm predict
+    #svm prediction and the best available confidence measure
     features = transform_svm_features(model_bundle, embeddings)
     clf = model_bundle["svm"]
     pred = clf.predict(features)
-    if hasattr(clf, "decision_function"):
-        score = clf.decision_function(features)
-    elif hasattr(clf, "predict_proba"):
-        score = clf.predict_proba(features)[:, 1]
+    if hasattr(clf, "predict_proba"):
+        confidence = clf.predict_proba(features).max(axis=1)
+    elif hasattr(clf, "decision_function"):
+        decision_scores = np.asarray(clf.decision_function(features))
+        if decision_scores.ndim == 1:
+            confidence = np.abs(decision_scores)
+        else:
+            confidence = np.max(decision_scores, axis=1)
     else:
-        score = pred.astype(np.float32)
-    return pred.astype(np.int64), np.asarray(score, dtype=np.float64)
+        confidence = np.full(len(pred), np.nan, dtype=np.float32)
+    return pred.astype(np.int64), np.asarray(confidence, dtype=np.float64)
 
 
 def test_mode(paths: ProjectPaths) -> None:
@@ -503,25 +517,75 @@ def test_mode(paths: ProjectPaths) -> None:
     maybe_copy_legacy_models(paths)
     if not paths.svm_path.exists():
         raise FileNotFoundError(f"Hybrid SVM model not found: {paths.svm_path}")
-    test_dir = resolve_existing_dir(paths.test_data_dir, None, "test data")
+    test_dir = resolve_existing_dir(paths.dataset_dir, paths.root / "dataset" / "MRI", "MRI dataset")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cnn, mean, std = load_cnn_for_inference(paths.cnn_path, device)
     svm_bundle = joblib.load(paths.svm_path)
     test_df = scan_image_tree(test_dir)
     embeddings, y_true = extract_embeddings(test_df, cnn, mean, std, batch_size=64, device=device)
-    y_pred, scores = predict_scores(svm_bundle, embeddings)
+    y_pred, confidences = predict_scores(svm_bundle, embeddings)
 
     correct = 0
+    output_path = paths.code_dir / "hybrid_6400_predictions.csv"
     print("\nPrediction results:")
-    for row, true_label, pred_label, score in zip(test_df.itertuples(index=False), y_true, y_pred, scores):
-        is_correct = int(true_label) == int(pred_label)
-        correct += int(is_correct)
-        print(
-            f"File: {row.file_name} | True: {label_name(true_label)} | "
-            f"Predicted: {label_name(pred_label)} | Score: {score:.6f}"
+    with output_path.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(
+            [
+                "filename",
+                "original_class",
+                "binary_true_label",
+                "predicted_label",
+                "confidence",
+                "correct",
+            ]
         )
-    accuracy = correct / len(test_df)
-    print(f"\nAccuracy: {correct}/{len(test_df)} = {accuracy:.2%}")
+
+        for row, true_label, pred_label, confidence in zip(
+            test_df.itertuples(index=False), y_true, y_pred, confidences
+        ):
+            is_correct = int(true_label) == int(pred_label)
+            correct += int(is_correct)
+            confidence_text = "" if np.isnan(confidence) else f"{confidence:.6f}"
+            writer.writerow(
+                [
+                    row.file_name,
+                    row.parent_label,
+                    label_name(true_label),
+                    label_name(pred_label),
+                    confidence_text,
+                    is_correct,
+                ]
+            )
+            print(
+                f"File: {row.file_name} | "
+                f"Original class: {row.parent_label} | "
+                f"Binary true label: {label_name(true_label)} | "
+                f"Predicted: {label_name(pred_label)} | "
+                f"Confidence: {confidence_text or 'N/A'} | "
+                f"Correct: {is_correct}"
+            )
+
+    total = len(test_df)
+    incorrect = total - correct
+    accuracy = correct / total
+    matrix = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    display = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=BINARY_LABELS)
+    display.plot(cmap="Blues", values_format="d")
+    display.ax_.set_title("Hybrid CNN-SVM Confusion Matrix")
+    display.figure_.tight_layout()
+    confusion_matrix_path = paths.code_dir / "hybrid_confusion_matrix.png"
+    display.figure_.savefig(confusion_matrix_path, dpi=300, bbox_inches="tight")
+    plt.close(display.figure_)
+
+    print(f"\nPredictions saved to: {output_path}")
+    print("Confusion matrix (rows=true labels, columns=predicted labels):")
+    print(matrix)
+    print(f"Confusion matrix figure saved to: {confusion_matrix_path}")
+    print(f"Total images tested: {total}")
+    print(f"Number correct: {correct}")
+    print(f"Number incorrect: {incorrect}")
+    print(f"Overall accuracy: {accuracy:.2%}")
 
 
 def ask_mode() -> str:

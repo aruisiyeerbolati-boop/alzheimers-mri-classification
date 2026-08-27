@@ -2,8 +2,8 @@
 Pixel SVM script for the MRI project.
 
 What this file does:
-- Test mode: load the saved pixel SVM from code/models, run about 20 images
-  from code/test_data, and print the true label vs the predicted label.
+- Test mode: load the saved pixel SVM, evaluate all images in dataset/MRI,
+  print each prediction, and save the results to svm_6400_predictions.csv.
 - Train mode: read the full dataset from code/dataset/MRI, turn each image into
   a flat pixel vector, train an SVM, and save it back to code/models.
 
@@ -18,16 +18,18 @@ an SVM draw the best line or curve it can between the two classes.
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 import time
 from pathlib import Path
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from sklearn.decomposition import PCA
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import ConfusionMatrixDisplay, accuracy_score, confusion_matrix, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -56,6 +58,8 @@ TEST_DATA_DIR = CODE_DIR / "test_data"
 DATASET_DIR = CODE_DIR / "dataset" / "MRI"
 FALLBACK_DATASET_DIR = PROJECT_ROOT / "dataset" / "MRI"
 FALLBACK_STATS_PATH = PROJECT_ROOT / "results" / "processed" / "image_normalization.json"
+PREDICTIONS_CSV_PATH = CODE_DIR / "svm_6400_predictions.csv"
+CONFUSION_MATRIX_PATH = CODE_DIR / "svm_confusion_matrix.png"
 
 
 def label_from_dir_name(dir_name: str) -> int:
@@ -294,10 +298,11 @@ def train_model() -> None:
 
 
 def load_test_set() -> tuple[list[Path], np.ndarray]:
-    #load test images
-    paths = iter_image_files(TEST_DATA_DIR)
+    #load every image in the full MRI dataset for evaluation
+    dataset_dir = find_dataset_dir()
+    paths = iter_image_files(dataset_dir)
     if not paths:
-        raise RuntimeError(f"No JPG/PNG test images were found in {TEST_DATA_DIR}")
+        raise RuntimeError(f"No JPG/PNG images were found in {dataset_dir}")
     labels = np.asarray([label_from_dir_name(path.parent.name) for path in paths], dtype=np.int64)
     print(f"Test images: {len(paths)}")
     return paths, labels
@@ -316,23 +321,79 @@ def test_model() -> None:
     x = load_flat_features(test_paths, mean, std)
     features = transform_features(bundle, x)
     y_pred = clf.predict(features)
-    if hasattr(clf, "decision_function"):
-        scores = clf.decision_function(features)
+    if hasattr(clf, "predict_proba"):
+        probabilities = clf.predict_proba(features)
+        confidences = probabilities.max(axis=1)
+        confidence_name = "Probability"
+    elif hasattr(clf, "decision_function"):
+        decision_scores = np.asarray(clf.decision_function(features))
+        if decision_scores.ndim == 1:
+            confidences = np.abs(decision_scores)
+        else:
+            confidences = np.max(decision_scores, axis=1)
+        confidence_name = "Decision confidence"
     else:
-        scores = np.zeros(len(test_paths), dtype=np.float32)
+        confidences = np.full(len(test_paths), np.nan, dtype=np.float32)
+        confidence_name = "Confidence"
 
     print("\nPrediction results:")
     correct = 0
-    for path, true_label, pred_label, score in zip(test_paths, y_true, y_pred, scores):
-        is_correct = int(true_label) == int(pred_label)
-        correct += int(is_correct)
-        print(
-            f"File: {path.name} | True: {label_text(true_label)} | "
-            f"Predicted: {label_text(pred_label)} | Score: {float(score):.6f}"
+    with PREDICTIONS_CSV_PATH.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(
+            [
+                "filename",
+                "original_class",
+                "binary_true_label",
+                "predicted_label",
+                "prediction_confidence",
+                "correct",
+            ]
         )
 
-    accuracy = correct / len(test_paths)
-    print(f"\nAccuracy: {correct}/{len(test_paths)} = {accuracy:.4%}")
+        for path, true_label, pred_label, confidence in zip(test_paths, y_true, y_pred, confidences):
+            is_correct = int(true_label) == int(pred_label)
+            correct += int(is_correct)
+            confidence_text = "" if np.isnan(confidence) else f"{float(confidence):.6f}"
+            original_class = path.parent.name
+            writer.writerow(
+                [
+                    path.name,
+                    original_class,
+                    label_text(true_label),
+                    label_text(pred_label),
+                    confidence_text,
+                    is_correct,
+                ]
+            )
+            print(
+                f"File: {path.name} | "
+                f"Original class: {original_class} | "
+                f"Binary true label: {label_text(true_label)} | "
+                f"Predicted: {label_text(pred_label)} | "
+                f"{confidence_name}: {confidence_text or 'N/A'} | "
+                f"Correct: {is_correct}"
+            )
+
+    total = len(test_paths)
+    incorrect = total - correct
+    accuracy = correct / total
+    matrix = confusion_matrix(y_true, y_pred, labels=[0, 1])
+    display = ConfusionMatrixDisplay(confusion_matrix=matrix, display_labels=LABEL_NAMES)
+    display.plot(cmap="Blues", values_format="d")
+    display.ax_.set_title("SVM Confusion Matrix")
+    display.figure_.tight_layout()
+    display.figure_.savefig(CONFUSION_MATRIX_PATH, dpi=300, bbox_inches="tight")
+    plt.close(display.figure_)
+
+    print(f"\nPredictions saved to: {PREDICTIONS_CSV_PATH}")
+    print("Confusion matrix (rows=true labels, columns=predicted labels):")
+    print(matrix)
+    print(f"Confusion matrix figure saved to: {CONFUSION_MATRIX_PATH}")
+    print(f"Total images tested: {total}")
+    print(f"Number correct: {correct}")
+    print(f"Number incorrect: {incorrect}")
+    print(f"Overall accuracy: {accuracy:.4%}")
 
 
 def ask_mode() -> str:
