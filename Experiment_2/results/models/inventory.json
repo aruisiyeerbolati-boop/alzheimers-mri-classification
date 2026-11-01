@@ -1,0 +1,25 @@
+{
+  "source_config_sha256": "806e3d0b0989bb56197a0e4513fb45fd325132221de4d7aaf1b18c99631d926d",
+  "branches": {
+    "raw": {
+      "checkpoint": "models\\raw\\cnn_best.pt",
+      "checkpoint_sha256": "ab22c58bd164a58ef17177cf533d37e062902f547168a7320fdcc5d7cea643c0",
+      "bundle": "models\\raw\\svm_bundle.joblib",
+      "bundle_sha256": "8dff8db856a63cea9b15b8d913c3322979bda16f599bf9316e019cf8901fd52e",
+      "mean": 0.16022922683132165,
+      "std": 0.1723013525692865,
+      "best_epoch": 3,
+      "best_val_loss": 0.37351112891123095
+    },
+    "processed": {
+      "checkpoint": "models\\processed\\cnn_best.pt",
+      "checkpoint_sha256": "4a5f1778ee0066eef46c548f707445317bbf7d37a972721566d1002e7407daeb",
+      "bundle": "models\\processed\\svm_bundle.joblib",
+      "bundle_sha256": "858743bc599ccbe32e49f0decaa56d2413a7dfc167cfaf333b8973a33dc83c3b",
+      "mean": 0.27499879067896443,
+      "std": 0.2695932920710277,
+      "best_epoch": 10,
+      "best_val_loss": 0.9545164282201224
+    }
+  }
+}
