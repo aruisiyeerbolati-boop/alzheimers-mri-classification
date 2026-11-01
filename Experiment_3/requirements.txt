@@ -1,0 +1,11 @@
+joblib
+numpy
+pandas
+Pillow
+scikit-learn
+torch
+tqdm
+opencv-python
+matplotlib
+python-docx
+requests
