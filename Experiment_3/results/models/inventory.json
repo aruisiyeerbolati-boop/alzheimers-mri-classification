@@ -1,0 +1,29 @@
+{
+  "source_config_sha256": "4aee02ccc8cbde489c859c2519d38b24fe9d2ef09e8f886d95ba4b1d7074b9ae",
+  "branches": {
+    "raw": {
+      "checkpoint": "models\\raw\\cnn_best.pt",
+      "checkpoint_sha256": "46bb38a405e33ba1cfcf20ede512f469ea8afa2c98939dbc5957b55f29d4b554",
+      "bundle": "models\\raw\\svm_bundle.joblib",
+      "bundle_sha256": "e8d0f2795bd84784aea2b332ce8226591b2b784609bb4714bbf1727e7c8b697d",
+      "mean": 0.1602292309929933,
+      "std": 0.17230134917817044,
+      "best_epoch": 14,
+      "selected_val_loss": 0.42616933776033544,
+      "best_val_accuracy": 0.8524332810047096,
+      "threshold": 0.8649999999999999
+    },
+    "processed": {
+      "checkpoint": "models\\processed\\cnn_best.pt",
+      "checkpoint_sha256": "6211702dd6213448eea32ba61a44975be145ab1091a230ea67c4ba4f18e0500e",
+      "bundle": "models\\processed\\svm_bundle.joblib",
+      "bundle_sha256": "b3376db52f9f54b13b7b13c9487652de0a2fa21b67c4e9ea3f3e2964032a81ce",
+      "mean": 0.2749987814995547,
+      "std": 0.2695933196864403,
+      "best_epoch": 11,
+      "selected_val_loss": 0.4759640594947282,
+      "best_val_accuracy": 0.8367346938775511,
+      "threshold": 0.8649999999999999
+    }
+  }
+}
