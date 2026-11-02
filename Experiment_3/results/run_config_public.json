@@ -1,0 +1,289 @@
+{
+  "started_utc": "2026-10-08T16:27:19.374731+00:00",
+  "status": "completed",
+  "mode": "full",
+  "argv": [
+    "third_experiment/run_experiment.py"
+  ],
+  "arguments": {
+    "source_dir": "REDACTED_LOCAL_PATH",
+"external_dir": "REDACTED_LOCAL_PATH",
+"manifest": "REDACTED_LOCAL_PATH",
+"output_dir": "REDACTED_LOCAL_PATH",
+    "source_limit": 5000,
+    "epochs": 50,
+    "device": "cuda",
+    "train_only": false,
+    "evaluate_only": false
+  },
+  "script_sha256": "54b0ce870518994c5d8f4224c0b5ee201977e092d748d7d57763c68c0d2c7212",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "cudnn": 91900,
+    "numpy": "1.26.4",
+    "sklearn": "1.8.0",
+    "cv2": "4.11.0",
+    "pillow": "12.1.1",
+    "joblib": "1.5.3",
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 2060",
+    "cublas_workspace_config": ":4096:8",
+    "deterministic_algorithms": false,
+    "torch_threads": 4,
+    "cudnn_benchmark": true
+  },
+  "source_config": {
+    "schema_version": 1,
+    "seed": 42,
+    "source_dir": "C:\\Users\\Administrator\\Desktop\\海马网络识别--Ares\\third_experiment\\dataset\\selected",
+    "source_limit": 5000,
+    "epochs": 50,
+    "batch_size": 64,
+    "source_manifest_sha256": "5351d7d6c2d9fafa99e1c0f71d49642ba60fde7275e580f4e6efa4381f341e96",
+    "source_summary": {
+      "original_count": 5000,
+      "unique_count": 5000,
+      "duplicate_files_removed": 0,
+      "selected_count": 5000,
+      "train_count": 3476,
+      "val_count": 637,
+      "test_count": 887,
+      "subject_count": 342,
+      "split_subject_counts": {
+        "train": 239,
+        "val": 51,
+        "test": 52
+      },
+      "train_original_class_counts": {
+        "Mild_Demented": 1109,
+        "Moderate_Demented": 244,
+        "Non_Demented": 1087,
+        "Very_Mild_Demented": 1036
+      },
+      "val_original_class_counts": {
+        "Mild_Demented": 204,
+        "Non_Demented": 212,
+        "Very_Mild_Demented": 221
+      },
+      "test_original_class_counts": {
+        "Mild_Demented": 191,
+        "Moderate_Demented": 244,
+        "Non_Demented": 205,
+        "Very_Mild_Demented": 247
+      },
+      "selection_manifest_sha256": "80960c1cb7d2b5388694864e2b1c076a7d35a72ee7edb609a22162c5a11b6b8a"
+    },
+    "label_mapping": {
+      "Non_Demented": 0,
+      "Very_Mild_Demented": 1,
+      "Mild_Demented": 1,
+      "Moderate_Demented": 1
+    },
+    "label_names": [
+      "Non_Demented",
+      "Demented"
+    ],
+    "stratify_by": "subject ID within original four-class folder",
+    "split": "fixed manifest: train3476 / val637 / test887, subject-disjoint; no second image-level split",
+    "pixel_hash": "SHA256(little-endian int64 RGB shape + native-size decoded RGB uint8 C-order bytes); no resize",
+    "preprocessing": {
+      "raw": "Pillow RGB -> L -> bilinear resize 128x128 -> float32 /255",
+      "processed": "Pillow RGB -> L -> bilinear resize 128x128 -> cv2 CLAHE(2.0,8x8) -> float32 /255"
+    },
+    "normalization": "CNN uses branch-specific training-only population mean/std; SVM scalers fit only training samples",
+    "cnn": {
+      "class": "cnn_model.SmallCNN",
+      "num_classes": 2,
+      "feature_dim": 128,
+      "dropout": 0.35
+    },
+    "optimizer": {
+      "name": "AdamW",
+      "lr": 0.0001,
+      "weight_decay": 0.0001,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "eps": 1e-08
+    },
+    "checkpoint_selection": "maximum source validation argmax accuracy, earliest epoch on tie",
+    "pixel_svm": "StandardScaler -> PCA(128, whiten=True, svd_solver=auto, seed42) -> RBF SVC(C=10,gamma=0.01)",
+    "embedding_svm": "best CNN eval-mode embedding -> StandardScaler -> linear SVC(C=0.1,gamma=scale)",
+    "reference_profile": {
+      "reference": "First experiment PPT and saved models",
+      "confirmed": {
+        "pixel_svm": {
+          "scaler": {
+            "copy": true,
+            "with_mean": true,
+            "with_std": true
+          },
+          "pca": {
+            "copy": true,
+            "iterated_power": "auto",
+            "n_components": 128,
+            "n_oversamples": 10,
+            "power_iteration_normalizer": "auto",
+            "random_state": 42,
+            "svd_solver": "auto",
+            "tol": 0.0,
+            "whiten": true
+          },
+          "svc": {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 200,
+            "class_weight": "balanced",
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.01,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": false,
+            "random_state": 42,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          }
+        },
+        "hybrid_svm": {
+          "scaler": {
+            "copy": true,
+            "with_mean": true,
+            "with_std": true
+          },
+          "pca": null,
+          "svc": {
+            "C": 0.1,
+            "break_ties": false,
+            "cache_size": 200,
+            "class_weight": "balanced",
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "linear",
+            "max_iter": -1,
+            "probability": false,
+            "random_state": 42,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          }
+        },
+        "cnn": {
+          "threshold": 0.8649999999999999,
+          "checkpoint_epoch": 49,
+          "feature_dim": 128,
+          "dropout": 0.35,
+          "architecture": "SmallCNN",
+          "epochs_from_ppt": 50,
+          "learning_rate_from_ppt": 0.0001
+        }
+      },
+      "cnn_training": {
+        "epochs": 50,
+        "batch_size": 64,
+        "optimizer": "AdamW",
+        "lr": 0.0001,
+        "weight_decay": 0.0001,
+        "loss": "training-class-weighted cross entropy",
+        "checkpoint_selection": "maximum validation accuracy at argmax",
+        "scheduler": {
+          "class": "ReduceLROnPlateau",
+          "mode": "max",
+          "patience": 3,
+          "factor": 0.5
+        },
+        "gradient_clip_max_norm": 1.0,
+        "cnn_threshold": 0.8649999999999999
+      },
+      "historical_unknowns": [
+        "batch_size",
+        "weight_decay",
+        "weighted_loss",
+        "checkpoint_selection",
+        "scheduler",
+        "gradient_clip"
+      ],
+      "source_files": {
+        "code\\models\\pixel_svm.joblib": {
+          "sha256": "a0b364db7219a54691bd8de87eda72f341ee367e782d732e3bbb6103a4dd7615"
+        },
+        "code\\models\\hybrid_svm.joblib": {
+          "sha256": "3dab70a7fc2278ef35684ba94c38a61af7c2fdca08a1469a31ab5b30de5823da"
+        },
+        "code\\models\\cnn_best.pt": {
+          "sha256": "187f7e46ef166ec90c8585b6b786ea43f61e1e146a11809b97398b1e5039515d"
+        },
+        "code\\cnn_model.py": {
+          "sha256": "9575c13b80e71c863d7a215309b5d7edca15fe1fbc6d112dd7dfe78686864903"
+        },
+        "SVM-CNN.pptx": {
+          "sha256": "017aa55ff3a3a9c76992a451509d25af7c26627839e89cfb550b0a847f5afc26"
+        }
+      },
+      "split_exception": "User explicitly retains second subject-disjoint split 3476/637/887",
+      "threshold_policy": "Use the fixed first-saved-model numerical threshold; do not tune on validation or test",
+      "svm_policy": "Fix the selected first-model numerical hyperparameters; no new grid search",
+      "preprocessing_exception": "Retain second raw and CLAHE branches; raw is the primary comparison with first experiment",
+      "historical_unknowns_policy": "Use visible old standalone CNN defaults, disclose these are not historically verified"
+    },
+    "reference_profile_sha256": "56e2faa023829e6a3222aa778c423926ce9c64975801c514b732ebb760232c4d",
+    "cnn_threshold": 0.8649999999999999,
+    "loss": "training-class-weighted cross entropy",
+    "scheduler": {
+      "class": "ReduceLROnPlateau",
+      "mode": "max",
+      "patience": 3,
+      "factor": 0.5
+    },
+    "gradient_clip_max_norm": 1.0,
+    "user_exception": "Keep the second subject-disjoint split; first used image-level split",
+    "metrics": {
+      "positive_label": 1,
+      "f1_average": "binary",
+      "confusion_order": [
+        0,
+        1
+      ]
+    },
+    "environment": {
+      "python": "3.11.15",
+      "platform": "Windows-10-10.0.19045-SP0",
+      "torch": "2.11.0+cu128",
+      "cuda": "12.8",
+      "cudnn": 91900,
+      "numpy": "1.26.4",
+      "sklearn": "1.8.0",
+      "cv2": "4.11.0",
+      "pillow": "12.1.1",
+      "joblib": "1.5.3",
+      "device": "cuda",
+      "gpu": "NVIDIA GeForce RTX 2060",
+      "cublas_workspace_config": ":4096:8",
+      "deterministic_algorithms": false,
+      "torch_threads": 4,
+      "cudnn_benchmark": true
+    },
+    "script_sha256": "54b0ce870518994c5d8f4224c0b5ee201977e092d748d7d57763c68c0d2c7212",
+    "cnn_model_sha256": "9575c13b80e71c863d7a215309b5d7edca15fe1fbc6d112dd7dfe78686864903"
+  },
+  "source_config_sha256": "4aee02ccc8cbde489c859c2519d38b24fe9d2ef09e8f886d95ba4b1d7074b9ae",
+  "external_summary": {
+    "external_total": 887,
+    "external_evaluated": 887,
+    "external_files_excluded_source_overlap": 0,
+    "overlapping_unique_pixel_hashes": 0,
+    "subject_overlap_with_train_val": 0,
+    "external_internal_duplicate_files": 0,
+    "external_manifest_sha256": "080e285b5bdb781f98074b49f8b29771ec10ccf547a75b1652e2804fcd2281c4",
+    "interpretation": "Subject-disjoint held-out subset of the same new dataset, NOT external cohort validation"
+  },
+  "finished_utc": "2026-10-08T16:30:08.238565+00:00"
+}
