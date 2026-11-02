@@ -1,0 +1,88 @@
+{
+  "status": "passed",
+  "started_utc": "2026-10-08T16:33:05.463515+00:00",
+  "checks": [
+    {
+      "name": "confirmed_first_settings_and_run_provenance",
+      "status": "passed"
+    },
+    {
+      "name": "same_second_selection_and_subject_disjoint_split",
+      "status": "passed"
+    },
+    {
+      "name": "all_selected_file_pixel_and_model_input_hashes",
+      "status": "passed"
+    },
+    {
+      "name": "raw_50_epochs_first_model_parameters_and_test_predictions",
+      "status": "passed"
+    },
+    {
+      "name": "processed_50_epochs_first_model_parameters_and_test_predictions",
+      "status": "passed"
+    },
+    {
+      "name": "second_saved_model_reference_on_identical_test",
+      "status": "passed"
+    },
+    {
+      "name": "first_and_second_experiment_files_unchanged",
+      "status": "passed"
+    }
+  ],
+  "failures": [],
+  "scope": "third protocol and artifacts; predictions recomputed from saved CSV",
+  "historical_alignment_limits": [
+    "Subject split retained at user request",
+    "Unrecorded historical CNN details use disclosed visible-code defaults"
+  ],
+  "models": [
+    {
+      "branch": "raw",
+      "model": "cnn",
+      "accuracy": 0.6617812852311161,
+      "auc": 0.8520992775910164,
+      "prediction_rows": 887
+    },
+    {
+      "branch": "raw",
+      "model": "pixel_svm",
+      "accuracy": 0.5682074408117249,
+      "auc": 0.7496674057649668,
+      "prediction_rows": 887
+    },
+    {
+      "branch": "raw",
+      "model": "embedding_svm",
+      "accuracy": 0.677564825253664,
+      "auc": 0.8280237465131248,
+      "prediction_rows": 887
+    },
+    {
+      "branch": "processed",
+      "model": "cnn",
+      "accuracy": 0.6798196166854565,
+      "auc": 0.811637221944067,
+      "prediction_rows": 887
+    },
+    {
+      "branch": "processed",
+      "model": "pixel_svm",
+      "accuracy": 0.49379932356257045,
+      "auc": 0.7336385094056219,
+      "prediction_rows": 887
+    },
+    {
+      "branch": "processed",
+      "model": "embedding_svm",
+      "accuracy": 0.6550169109357384,
+      "auc": 0.8027179743938202,
+      "prediction_rows": 887
+    }
+  ],
+  "selected_images_verified": 5000,
+  "second_comparison_verified": 6,
+  "protected_files_verified": 98018,
+  "finished_utc": "2026-10-08T16:34:16.254844+00:00"
+}
