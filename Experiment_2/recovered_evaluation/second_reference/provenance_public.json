@@ -1,0 +1,31 @@
+{
+  "scope": "Second-experiment saved-model re-evaluation performed as part of third-experiment comparison; NOT original second-experiment training metrics",
+  "original_provenance_sha256": "638e2cdf9d3e3e935f57c7055676317a15e09da41270b4a5c403ec55bf16cf90",
+  "original_test_manifest_sha256": "080e285b5bdb781f98074b49f8b29771ec10ccf547a75b1652e2804fcd2281c4",
+  "original_second_experiment_model_hashes": {
+    "results/models/raw/cnn_best.pt": "ab22c58bd164a58ef17177cf533d37e062902f547168a7320fdcc5d7cea643c0",
+    "results/models/raw/svm_bundle.joblib": "8dff8db856a63cea9b15b8d913c3322979bda16f599bf9316e019cf8901fd52e",
+    "results/models/processed/cnn_best.pt": "4a5f1778ee0066eef46c548f707445317bbf7d37a972721566d1002e7407daeb",
+    "results/models/processed/svm_bundle.joblib": "858743bc599ccbe32e49f0decaa56d2413a7dfc167cfaf333b8973a33dc83c3b"
+  },
+  "fixed_second_experiment_manifest_sha256": "80960c1cb7d2b5388694864e2b1c076a7d35a72ee7edb609a22162c5a11b6b8a",
+  "sanitization": "Only sample_path absolute prefixes were replaced by dataset-relative paths; original per-sample labels/scores/pixel hashes preserved",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "cudnn": 91900,
+    "numpy": "1.26.4",
+    "sklearn": "1.8.0",
+    "cv2": "4.11.0",
+    "pillow": "12.1.1",
+    "joblib": "1.5.3",
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 2060",
+    "cublas_workspace_config": ":4096:8",
+    "deterministic_algorithms": false,
+    "torch_threads": 4,
+    "cudnn_benchmark": false
+  }
+}
